@@ -79,7 +79,10 @@ def procesar_barrio(message, nombre):
     db_manager.guardar_usuario(message.chat.id, nombre, barrio)
     bot.send_message(
         message.chat.id,
-        f"Registro completo. Nombre: {nombre} | Barrio: {barrio}.",
+        f"✅ Registro completo. Nombre: {nombre} | Barrio: {barrio}.\n\n"
+        f"Comandos disponibles:\n"
+        f"📊 /estado - Consulta el nivel hídrico actual en tu barrio.\n"
+        f"🚨 /reportar - Envía un reporte ciudadano sobre un incidente en la vía pública."
     )
 
 @bot.message_handler(commands=["estado"])
