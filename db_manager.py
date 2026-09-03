@@ -26,6 +26,18 @@ def init_db():
             FOREIGN KEY (chat_id) REFERENCES Usuarios (chat_id)
         )
     """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS Alertas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            barrio TEXT NOT NULL,
+            nivel TEXT NOT NULL,
+            mensaje TEXT NOT NULL,
+            fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+            activa INTEGER DEFAULT 1
+        )
+    """)
+
     conn.commit()
     conn.close()
     logger.info("Base de datos y tablas inicializadas correctamente (Usuarios y Reportes).")
@@ -40,6 +52,44 @@ def guardar_usuario(chat_id, nombre, barrio):
     conn.commit()
     conn.close()
     logger.info(f"Usuario guardado/actualizado en DB: {chat_id} - {nombre} ({barrio})")
+
+def guardar_alerta(barrio, nivel, mensaje):
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO Alertas (barrio, nivel, mensaje)
+        VALUES (?, ?, ?)
+    """, (barrio, nivel, mensaje))
+
+    conn.commit()
+    conn.close()
+
+def obtener_alerta_barrio(barrio):
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT nivel, mensaje, fecha
+        FROM Alertas
+        WHERE LOWER(barrio) = LOWER(?)
+        AND activa = 1
+        ORDER BY fecha DESC
+        LIMIT 1
+    """, (barrio,))
+
+    row = cur.fetchone()
+
+    conn.close()
+
+    if row:
+        return {
+            "nivel": row[0],
+            "mensaje": row[1],
+            "fecha": row[2]
+        }
+
+    return None
 
 def obtener_usuario(chat_id):
     conn = get_conn()
