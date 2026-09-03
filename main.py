@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 import db_manager
 import time
 import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 import alerta_corrientes
 
@@ -194,6 +195,23 @@ def fallback_default(message):
         "Comando no reconocido. Podés usar /start para registrarte o /reportar para informar un problema en tu barrio."
     )
 
+def start_dummy_server():
+    """Servidor web falso para que Render no tire error al desplegar como Web Service gratuito"""
+    port = int(os.environ.get("PORT", 10000))
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.send_header('Content-type','text/plain')
+            self.end_headers()
+            self.wfile.write(b"Bot SAPH is running y vivo!")
+            
+    try:
+        httpd = HTTPServer(('', port), Handler)
+        logger.info(f"Servidor web dummy escuchando en puerto {port} para Render")
+        httpd.serve_forever()
+    except Exception as e:
+        logger.error(f"Error en servidor web dummy: {e}")
+
 def chequeo_periodico_clima():
     """Se ejecuta en segundo plano para buscar alertas y avisar a los vecinos."""
     ultima_alerta_enviada = None
@@ -246,6 +264,10 @@ def chequeo_periodico_clima():
 if __name__ == "__main__":
     db_manager.init_db()
     logger.info("Iniciando bot...")
+    
+    # Si estamos en Render, iniciamos el servidor web falso para que no nos baje la app
+    if "RENDER" in os.environ or "PORT" in os.environ:
+        threading.Thread(target=start_dummy_server, daemon=True).start()
     
     # Arrancamos el temporizador en segundo plano
     hilo_clima = threading.Thread(target=chequeo_periodico_clima, daemon=True)
