@@ -78,6 +78,20 @@ Para correr todos los tests, usa:
 python -m unittest discover tests
 ```
 
+## 🕵️‍♂️ Comandos Ocultos (Para Jurados/Evaluadores)
+
+Para facilitar la evaluación del proyecto sin necesidad de esperar a una tormenta real ni requerir permisos de administrador en la base de datos, se habilitaron **comandos ocultos** (no visibles en la lista pública).
+
+Si un jurado desea ver exactamente cómo se ve cada nivel de notificación, solo debe escribir y enviar alguno de los siguientes comandos al bot:
+
+- `/disparar_alerta_roja`
+- `/disparar_alerta_naranja`
+- `/disparar_alerta_amarilla`
+- `/disparar_alerta_verde`
+- `/disparar_alerta_azul`
+
+El bot le responderá inmediatamente con el formato visual (emojis, alertas, texto de precaución) correspondiente a ese nivel de alerta en su barrio registrado.
+
 ## 📂 Estructura del Proyecto
 
 - `main.py` - Script principal y manejador (handlers) del Bot de Telegram.

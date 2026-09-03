@@ -102,6 +102,38 @@ def cmd_estado(message):
         "🚨 /reportar - Envía un reporte ciudadano sobre un incidente en la vía pública.",
     )
 
+@bot.message_handler(commands=["disparar_alerta_roja", "disparar_alerta_naranja", "disparar_alerta_amarilla", "disparar_alerta_verde", "disparar_alerta_azul"])
+def cmd_disparar_alerta_simulacro(message):
+    barrio = db_manager.obtener_barrio(message.chat.id) or "tu barrio"
+    comando = message.text.split("@")[0].lower() # por si viene con /comando@botname
+    
+    if "roja" in comando:
+        texto = (f"🔴 ALERTA ROJA (SIMULACRO) - {barrio}\n\n"
+                 "Se detectó un nivel hídrico crítico y tormenta severa inminente en tu zona.\n"
+                 "⚠️ Peligro de anegamientos graves.\n"
+                 "Extremá precauciones, resguardate en lugares altos y seguí las indicaciones de Defensa Civil.")
+    elif "naranja" in comando:
+        texto = (f"🟠 ALERTA NARANJA (SIMULACRO) - {barrio}\n\n"
+                 "Lluvia muy fuerte detectada.\n"
+                 "Posible anegamiento en calles principales.\n"
+                 "Evitá circular por zonas inundables.")
+    elif "amarilla" in comando:
+        texto = (f"🟡 ALERTA AMARILLA (SIMULACRO) - {barrio}\n\n"
+                 "Lluvia moderada continua.\n"
+                 "Precaución al transitar, posibles charcos profundos.")
+    elif "verde" in comando:
+        texto = (f"🟢 ALERTA VERDE (SIMULACRO) - {barrio}\n\n"
+                 "Llovizna o lluvia leve.\n"
+                 "Sin riesgo de inundaciones por el momento.")
+    else: # azul
+        texto = (f"🔵 ALERTA AZUL (SIMULACRO) - {barrio}\n\n"
+                 "Cielo despejado o nublado.\n"
+                 "Condiciones hídricas completamente normales.")
+
+    bot.send_message(message.chat.id, texto)
+    logger.info(f"Simulacro de alerta ({comando}) enviado al chat {message.chat.id}")
+
+
 @bot.message_handler(commands=["disparar_alerta"])
 def cmd_disparar_alerta(message):
     if message.from_user.id not in ADMIN_IDS:
