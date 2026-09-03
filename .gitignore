@@ -1,0 +1,7 @@
+# Entorno
+.env
+__pycache__/
+
+# Base de datos
+*.db
+alertas.db
