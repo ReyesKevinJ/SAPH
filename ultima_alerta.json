@@ -1,10 +1,10 @@
 {
     "ciudad": "Corrientes Capital",
     "radar": "RMA4",
-    "timestamp_utc": "144946",
+    "timestamp_utc": "150750",
     "analisis": {
-        "pixel_x": 723,
-        "pixel_y": 668,
+        "pixel_x": 540,
+        "pixel_y": 500,
         "color_rgb": {
             "r": 24,
             "g": 27,

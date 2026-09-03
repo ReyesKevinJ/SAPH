@@ -66,7 +66,9 @@ def demo_alerta_corrientes():
         print("✅ Imagen de radar descargada correctamente.")
     except Exception as e:
         print(f"❌ Error al descargar la imagen PNG: {e}")
-        return
+        print("🔧 [TEST] Usando imagen simulada (Cielo Despejado) para continuar la prueba de integración...")
+        # Creamos una imagen simulada con el color base oscuro (r=24, g=27, b=33) del radar vacío
+        imagen = Image.new('RGB', (1000, 1000), color=(24, 27, 33))
 
     # 3. Análisis de píxeles (Ciudad de Corrientes)
     ancho, alto = imagen.size
@@ -130,6 +132,36 @@ def demo_alerta_corrientes():
     # Opcional: Guardar el JSON en un archivo
     with open("ultima_alerta.json", "w", encoding="utf-8") as f:
         f.write(salida_json)
+
+    import main
+    
+    # 6. Integración con el Bot (SAPH)
+    # Mapeo de niveles numéricos a texto para el bot
+    mapa_niveles = {0: "Despejado", 1: "Verde", 2: "Amarilla", 3: "Naranja", 4: "Roja"}
+    
+    print("\n🤖 Integrando con el Bot SAPH...")
+    # Para probar la alerta en el Hackathon, si el nivel es 0 (Despejado), forzamos una alerta de prueba.
+    es_prueba = False
+    if nivel < 2:
+        print("   (Como el cielo está despejado, simularemos una tormenta para poder probar el bot)")
+        nivel = 4
+        alerta = "ALERTA ROJA (SIMULACRO): Tormenta severa inminente detectada."
+        es_prueba = True
+        
+    if nivel >= 2:
+        payload_bot = {
+            "intencion": "alerta_meteorologica",
+            "entidades": {
+                # Se asume "17 de agosto" por ser el barrio que usamos de prueba en Corrientes Capital
+                "barrios_afectados": ["17 de agosto"], 
+                "nivel_alerta": mapa_niveles.get(nivel, "Roja"),
+                "mensaje": alerta
+            }
+        }
+        print(f"🚀 Disparando broadcast a través del bot para el nivel {nivel}...")
+        main.procesar_datos_llm(0, payload_bot)  # chat_id no importa en un broadcast
+    else:
+        print("🌤️ Condiciones normales. No se requiere enviar alerta.")
 
     return datos_json
 
