@@ -24,4 +24,16 @@ json_reporte = {
 print("\nSimulando LLM - Reporte...")
 main.procesar_datos_llm(chat_id_prueba, json_reporte)
 
+# 3. Probar alerta automática proveniente del radar del SMN
+json_alerta_smn = {
+    "intencion": "alerta_meteorologica",
+    "entidades": {
+        "barrios_afectados": ["La Boca", "Palermo"],
+        "nivel_alerta": "Roja",
+        "mensaje": "El radar del SMN detectó una masa de agua con alto riesgo de inundación repentina."
+    }
+}
+print("\nSimulando LLM (Visión) - Radar SMN...")
+main.procesar_datos_llm(chat_id_prueba, json_alerta_smn)
+
 print("\n¡Pruebas enviadas! Si tu bot está corriendo, también deberías haber recibido los mensajes de respuesta en Telegram.")

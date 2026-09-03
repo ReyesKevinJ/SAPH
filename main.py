@@ -56,6 +56,28 @@ def procesar_datos_llm(chat_id, json_data):
             )
             logger.info(f"Reporte guardado via LLM: chat_id={chat_id}, tipo={tipo_problema}, barrio={barrio}")
 
+        elif intencion == "alerta_meteorologica":
+            barrios_afectados = entidades.get("barrios_afectados", [])
+            nivel_alerta = entidades.get("nivel_alerta", "Naranja")
+            detalle = entidades.get("mensaje", "Anomalías hídricas detectadas por radar.")
+            
+            total_enviados = 0
+            for barrio in barrios_afectados:
+                chat_ids = db_manager.obtener_chat_ids_por_barrio(barrio)
+                if not chat_ids:
+                    continue
+                    
+                texto_alerta = f"🚨 ALERTA METEOROLÓGICA {nivel_alerta.upper()} - {barrio}\n{detalle}\nExtremá precauciones y seguí las indicaciones oficiales."
+                
+                for chat_id in chat_ids:
+                    try:
+                        bot.send_message(chat_id, texto_alerta)
+                        total_enviados += 1
+                    except Exception as e:
+                        logger.error(f"Error enviando alerta SMN al chat {chat_id}: {e}")
+                        
+            logger.info(f"Alerta SMN ({nivel_alerta}) enviada a {total_enviados} usuarios de los barrios: {barrios_afectados}")
+
         else:
             bot.send_message(chat_id, "No pude interpretar tu mensaje. Intentá de nuevo.")
             logger.warning(f"Intención desconocida: chat_id={chat_id}, json_data={json_data}")
