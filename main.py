@@ -62,49 +62,22 @@ def procesar_datos_llm(chat_id, json_data):
             nivel_alerta = entidades.get("nivel_alerta", "Naranja")
             detalle = entidades.get("mensaje", "Anomalías hídricas detectadas por radar.")
             
-            nivel_lower = nivel_alerta.lower()
-            
-            # Configurar emojis, título y precauciones según nivel
-            if nivel_lower == "despejado":
-                emoji = "🔵"
-                titulo = "REPORTE METEOROLÓGICO"
-                pie = "Condiciones óptimas. No se requieren precauciones especiales."
-            elif nivel_lower == "verde":
-                emoji = "🟢"
-                titulo = "REPORTE METEOROLÓGICO"
-                pie = "Condiciones normales. Mantente informado."
-            elif nivel_lower == "amarilla":
-                emoji = "🟡"
-                titulo = "ALERTA METEOROLÓGICA"
-                pie = "Prestá atención a posibles cambios en el clima."
-            elif nivel_lower == "naranja":
-                emoji = "🟠"
-                titulo = "ALERTA METEOROLÓGICA"
-                pie = "Extremá precauciones y seguí las indicaciones oficiales."
-            else: # Roja
-                emoji = "🔴"
-                titulo = "ALERTA METEOROLÓGICA SEVERA"
-                pie = "Peligro inminente. Buscá refugio y seguí las indicaciones oficiales."
-            
-            # Notificación silenciosa si el nivel es bajo
-            silencioso = True if nivel_lower in ["despejado", "verde", "amarilla"] else False
-            
             total_enviados = 0
             for barrio in barrios_afectados:
                 chat_ids = db_manager.obtener_chat_ids_por_barrio(barrio)
                 if not chat_ids:
                     continue
                     
-                texto_alerta = f"{emoji} {titulo} {nivel_alerta.upper()} - {barrio}\n{detalle}\n{pie}"
+                texto_alerta = f"🚨 ALERTA METEOROLÓGICA {nivel_alerta.upper()} - {barrio}\n{detalle}\nExtremá precauciones y seguí las indicaciones oficiales."
                 
                 for chat_id in chat_ids:
                     try:
-                        bot.send_message(chat_id, texto_alerta, disable_notification=silencioso)
+                        bot.send_message(chat_id, texto_alerta)
                         total_enviados += 1
                     except Exception as e:
                         logger.error(f"Error enviando alerta SMN al chat {chat_id}: {e}")
                         
-            logger.info(f"Alerta SMN ({nivel_alerta}) enviada a {total_enviados} usuarios de los barrios: {barrios_afectados} (Silencioso: {silencioso})")
+            logger.info(f"Alerta SMN ({nivel_alerta}) enviada a {total_enviados} usuarios de los barrios: {barrios_afectados}")
 
         else:
             bot.send_message(chat_id, "No pude interpretar tu mensaje. Intentá de nuevo.")

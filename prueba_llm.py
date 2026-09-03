@@ -6,8 +6,8 @@ chat_id_prueba = 1308284715 # Tu ID real de Telegram (Tobias)
 json_registro = {
     "intencion": "registro",
     "entidades": {
-        "nombre": "Tobias",
-        "barrio": "17 de agosto"
+        "nombre": "Ana LLM",
+        "barrio": "La Boca"
     }
 }
 print("Simulando LLM - Registro...")
@@ -18,31 +18,22 @@ json_reporte = {
     "intencion": "reporte",
     "entidades": {
         "tipo_problema": "Calle inundada",
-        # Al no mandar barrio, debería tomar el del registro
+        # Al no mandar barrio, debería tomar el del registro ("La Boca")
     }
 }
 print("\nSimulando LLM - Reporte...")
 main.procesar_datos_llm(chat_id_prueba, json_reporte)
 
-# 3. Probar alerta automática proveniente del radar del SMN (Todos los niveles)
-niveles_prueba = [
-    ("Despejado", "Cielo claro, sin novedades."),
-    ("Verde", "Ligera nubosidad, todo normal."),
-    ("Amarilla", "Lluvias moderadas, sin riesgo inmediato."),
-    ("Naranja", "Lluvias fuertes, posible anegamiento."),
-    ("Roja", "Peligro inminente, precaución máxima.")
-]
-
-for nivel, msj in niveles_prueba:
-    json_alerta_smn = {
-        "intencion": "alerta_meteorologica",
-        "entidades": {
-            "barrios_afectados": ["17 de agosto"],
-            "nivel_alerta": nivel,
-            "mensaje": msj
-        }
+# 3. Probar alerta automática proveniente del radar del SMN
+json_alerta_smn = {
+    "intencion": "alerta_meteorologica",
+    "entidades": {
+        "barrios_afectados": ["La Boca", "Palermo"],
+        "nivel_alerta": "Roja",
+        "mensaje": "El radar del SMN detectó una masa de agua con alto riesgo de inundación repentina."
     }
-    print(f"\nSimulando Radar SMN - Nivel {nivel}...")
-    main.procesar_datos_llm(chat_id_prueba, json_alerta_smn)
+}
+print("\nSimulando LLM (Visión) - Radar SMN...")
+main.procesar_datos_llm(chat_id_prueba, json_alerta_smn)
 
 print("\n¡Pruebas enviadas! Si tu bot está corriendo, también deberías haber recibido los mensajes de respuesta en Telegram.")

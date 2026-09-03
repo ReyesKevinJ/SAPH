@@ -140,18 +140,28 @@ def demo_alerta_corrientes():
     mapa_niveles = {0: "Despejado", 1: "Verde", 2: "Amarilla", 3: "Naranja", 4: "Roja"}
     
     print("\n🤖 Integrando con el Bot SAPH...")
-    
-    payload_bot = {
-        "intencion": "alerta_meteorologica",
-        "entidades": {
-            # Se asume "17 de agosto" por ser el barrio que usamos de prueba en Corrientes Capital
-            "barrios_afectados": ["17 de agosto"], 
-            "nivel_alerta": mapa_niveles.get(nivel, "Despejado"),
-            "mensaje": alerta
+    # Para probar la alerta en el Hackathon, si el nivel es 0 (Despejado), forzamos una alerta de prueba.
+    es_prueba = False
+    if nivel < 2:
+        print("   (Como el cielo está despejado, simularemos una tormenta para poder probar el bot)")
+        nivel = 4
+        alerta = "ALERTA ROJA (SIMULACRO): Tormenta severa inminente detectada."
+        es_prueba = True
+        
+    if nivel >= 2:
+        payload_bot = {
+            "intencion": "alerta_meteorologica",
+            "entidades": {
+                # Se asume "17 de agosto" por ser el barrio que usamos de prueba en Corrientes Capital
+                "barrios_afectados": ["17 de agosto"], 
+                "nivel_alerta": mapa_niveles.get(nivel, "Roja"),
+                "mensaje": alerta
+            }
         }
-    }
-    print(f"🚀 Disparando broadcast a través del bot para el nivel {nivel}...")
-    main.procesar_datos_llm(0, payload_bot)  # chat_id no importa en un broadcast
+        print(f"🚀 Disparando broadcast a través del bot para el nivel {nivel}...")
+        main.procesar_datos_llm(0, payload_bot)  # chat_id no importa en un broadcast
+    else:
+        print("🌤️ Condiciones normales. No se requiere enviar alerta.")
 
     return datos_json
 
