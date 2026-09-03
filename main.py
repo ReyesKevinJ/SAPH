@@ -1,9 +1,9 @@
 import os
-import sqlite3
 import logging
 import telebot
 from telebot import types
 from dotenv import load_dotenv
+import db_manager
 
 # Cargar variables de entorno desde el archivo .env
 load_dotenv()
@@ -18,54 +18,76 @@ logger = logging.getLogger(__name__)
 # Configuración mediante variables de entorno
 TOKEN = os.getenv("TELEGRAM_TOKEN", "TU_TOKEN_AQUI")
 ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "123456789").split(",") if x.strip()]
-DB_PATH = "alertas.db"
 
 bot = telebot.TeleBot(TOKEN)
 
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS Usuarios (
-            chat_id INTEGER PRIMARY KEY,
-            nombre TEXT,
-            barrio TEXT
-        )
-    """)
-    conn.commit()
-    conn.close()
-    logger.info("Base de datos inicializada correctamente.")
+def procesar_datos_llm(chat_id, json_data):
+    """
+    Pista de aterrizaje para datos estructurados provenientes de un LLM.
+    json_data esperado: {"intencion": "registro"|"reporte", "entidades": {...}}
+    """
+    try:
+        intencion = json_data.get("intencion")
+        entidades = json_data.get("entidades", {})
 
-def get_conn():
-    return sqlite3.connect(DB_PATH)
+        if intencion == "registro":
+            nombre = entidades["nombre"]
+            barrio = entidades["barrio"]
+            db_manager.guardar_usuario(chat_id, nombre, barrio)
+            bot.send_message(
+                chat_id,
+                f"Registro completo. Nombre: {nombre} | Barrio: {barrio}.",
+            )
+            logger.info(f"Usuario registrado via LLM: chat_id={chat_id}, barrio={barrio}")
 
-def guardar_usuario(chat_id, nombre, barrio):
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute(
-        "INSERT OR REPLACE INTO Usuarios (chat_id, nombre, barrio) VALUES (?, ?, ?)",
-        (chat_id, nombre, barrio),
-    )
-    conn.commit()
-    conn.close()
-    logger.info(f"Usuario guardado/actualizado: {chat_id} - {nombre} ({barrio})")
+        elif intencion == "reporte":
+            usuario = db_manager.obtener_usuario(chat_id)
+            if usuario is None:
+                bot.send_message(chat_id, "Necesitás registrarte primero con /start.")
+                logger.warning(f"Reporte rechazado, usuario no registrado: chat_id={chat_id}")
+                return
 
-def obtener_barrio(chat_id):
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute("SELECT barrio FROM Usuarios WHERE chat_id = ?", (chat_id,))
-    row = cur.fetchone()
-    conn.close()
-    return row[0] if row else None
+            tipo_problema = entidades["tipo_problema"]
+            barrio = entidades.get("barrio", usuario["barrio"])
+            db_manager.guardar_reporte(chat_id, tipo_problema, barrio)
+            bot.send_message(
+                chat_id,
+                f"Reporte recibido: {tipo_problema} en {barrio}. Gracias por informar.",
+            )
+            logger.info(f"Reporte guardado via LLM: chat_id={chat_id}, tipo={tipo_problema}, barrio={barrio}")
 
-def obtener_chat_ids_por_barrio(barrio):
-    conn = get_conn()
-    cur = conn.cursor()
-    # Búsqueda insensible a mayúsculas/minúsculas para el barrio
-    cur.execute("SELECT chat_id FROM Usuarios WHERE LOWER(barrio) = LOWER(?)", (barrio,))
-    rows = cur.fetchall()
-    conn.close()
-    return [r[0] for r in rows]
+        elif intencion == "alerta_meteorologica":
+            barrios_afectados = entidades.get("barrios_afectados", [])
+            nivel_alerta = entidades.get("nivel_alerta", "Naranja")
+            detalle = entidades.get("mensaje", "Anomalías hídricas detectadas por radar.")
+            
+            total_enviados = 0
+            for barrio in barrios_afectados:
+                chat_ids = db_manager.obtener_chat_ids_por_barrio(barrio)
+                if not chat_ids:
+                    continue
+                    
+                texto_alerta = f"🚨 ALERTA METEOROLÓGICA {nivel_alerta.upper()} - {barrio}\n{detalle}\nExtremá precauciones y seguí las indicaciones oficiales."
+                
+                for chat_id in chat_ids:
+                    try:
+                        bot.send_message(chat_id, texto_alerta)
+                        total_enviados += 1
+                    except Exception as e:
+                        logger.error(f"Error enviando alerta SMN al chat {chat_id}: {e}")
+                        
+            logger.info(f"Alerta SMN ({nivel_alerta}) enviada a {total_enviados} usuarios de los barrios: {barrios_afectados}")
+
+        else:
+            bot.send_message(chat_id, "No pude interpretar tu mensaje. Intentá de nuevo.")
+            logger.warning(f"Intención desconocida: chat_id={chat_id}, json_data={json_data}")
+
+    except KeyError as e:
+        bot.send_message(chat_id, "Faltan datos para procesar tu solicitud.")
+        logger.error(f"KeyError procesando LLM data: chat_id={chat_id}, error={e}, json_data={json_data}")
+    except Exception as e:
+        bot.send_message(chat_id, "Ocurrió un error interno. Intentá más tarde.")
+        logger.error(f"Error inesperado: chat_id={chat_id}, error={e}, json_data={json_data}")
 
 @bot.message_handler(commands=["start"])
 def cmd_start(message):
@@ -92,7 +114,7 @@ def procesar_barrio(message, nombre):
         bot.register_next_step_handler(msg, procesar_barrio, nombre)
         return
         
-    guardar_usuario(message.chat.id, nombre, barrio)
+    db_manager.guardar_usuario(message.chat.id, nombre, barrio)
     bot.send_message(
         message.chat.id,
         f"Registro completo. Nombre: {nombre} | Barrio: {barrio}.",
@@ -100,12 +122,12 @@ def procesar_barrio(message, nombre):
 
 @bot.message_handler(commands=["estado"])
 def cmd_estado(message):
-    barrio = obtener_barrio(message.chat.id)
+    barrio = db_manager.obtener_barrio(message.chat.id)
     if barrio is None:
         bot.send_message(message.chat.id, "No estás registrado. Usá /start primero.")
         return
     
-    # Respuesta requerida por los requisitos funcionales ("Niveles hídricos normales")
+    # Respuesta requerida por los requisitos funcionales
     bot.send_message(
         message.chat.id,
         "Niveles hídricos normales",
@@ -124,7 +146,7 @@ def cmd_disparar_alerta(message):
         return
 
     barrio = partes[1].strip()
-    chat_ids = obtener_chat_ids_por_barrio(barrio)
+    chat_ids = db_manager.obtener_chat_ids_por_barrio(barrio)
 
     if not chat_ids:
         bot.send_message(message.chat.id, f"No hay usuarios registrados en {barrio}.")
@@ -149,6 +171,6 @@ def cmd_disparar_alerta(message):
     logger.info(f"Alerta enviada para el barrio {barrio} a {enviados} usuarios.")
 
 if __name__ == "__main__":
-    init_db()
+    db_manager.init_db()
     logger.info("Iniciando bot...")
     bot.infinity_polling()
