@@ -1,18 +1,32 @@
 {
-    "ciudad": "Corrientes Capital",
-    "radar": "RMA4",
-    "timestamp_utc": "172319",
-    "analisis": {
-        "pixel_x": 540,
-        "pixel_y": 500,
-        "color_rgb": {
-            "r": 24,
-            "g": 27,
-            "b": 33
+    "timestamp": "2026-09-03T15:34:05.484132",
+    "fuente": "Open-Meteo API",
+    "nivel_general": 0,
+    "mensaje_general": "Condiciones normales",
+    "analisis_barrios": {
+        "Cambá Cuá": {
+            "nivel": 0,
+            "alerta": "CIELO DESPEJADO: Condiciones hídricas normales.",
+            "weather_code": 0,
+            "precipitacion_mm": 0.0
+        },
+        "17 de Agosto": {
+            "nivel": 0,
+            "alerta": "CIELO DESPEJADO: Condiciones hídricas normales.",
+            "weather_code": 0,
+            "precipitacion_mm": 0.0
+        },
+        "Molina Punta": {
+            "nivel": 0,
+            "alerta": "CIELO DESPEJADO: Condiciones hídricas normales.",
+            "weather_code": 0,
+            "precipitacion_mm": 0.0
+        },
+        "Centro": {
+            "nivel": 0,
+            "alerta": "CIELO DESPEJADO: Condiciones hídricas normales.",
+            "weather_code": 0,
+            "precipitacion_mm": 0.0
         }
-    },
-    "alerta": {
-        "nivel": 0,
-        "mensaje": "CIELO DESPEJADO: No se detectan ecos de precipitación significativos."
     }
 }
