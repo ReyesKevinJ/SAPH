@@ -205,6 +205,11 @@ def start_dummy_server():
             self.end_headers()
             self.wfile.write(b"Bot SAPH is running y vivo!")
             
+        def do_HEAD(self):
+            self.send_response(200)
+            self.send_header('Content-type','text/plain')
+            self.end_headers()
+            
     try:
         httpd = HTTPServer(('', port), Handler)
         logger.info(f"Servidor web dummy escuchando en puerto {port} para Render")

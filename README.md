@@ -87,3 +87,13 @@ python -m unittest discover tests
 - `leer_db.py` - Herramienta de consola para leer registros de la DB.
 - `tests/` - Carpeta que contiene las pruebas unitarias.
 - `ultima_alerta.json` - Archivo caché generado con el estado hídrico de los barrios.
+
+## ☁️ Despliegue en la Nube (Gratis)
+
+El bot está preparado para ser alojado de forma 100% gratuita en **Render** como un Web Service continuo.
+
+1. **En Render:** Crea un "Web Service", conecta este repositorio y asegúrate de configurar:
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `python main.py`
+   - **Environment Variables:** Añade `TELEGRAM_TOKEN` y `ADMIN_IDS`.
+2. **En UptimeRobot:** Para evitar que el plan gratuito de Render entre en hibernación, crea un monitor HTTP(s) que haga ping cada 10 minutos a la URL pública asignada por Render (ej. `https://tu-app.onrender.com`). El bot incorpora un servidor web oculto para responder automáticamente a estos pings.
