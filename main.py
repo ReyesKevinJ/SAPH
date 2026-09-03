@@ -95,7 +95,10 @@ def cmd_estado(message):
     # Respuesta requerida por los requisitos funcionales
     bot.send_message(
         message.chat.id,
-        "Niveles hídricos normales",
+        "Niveles hídricos normales\n\n"
+        "Comandos disponibles:\n"
+        "📊 /estado - Consulta el nivel hídrico actual en tu barrio.\n"
+        "🚨 /reportar - Envía un reporte ciudadano sobre un incidente en la vía pública.",
     )
 
 @bot.message_handler(commands=["disparar_alerta"])
@@ -161,33 +164,6 @@ def procesar_tipo_problema(message, barrio_registrado):
         parse_mode="Markdown"
     )
     bot.register_next_step_handler(msg, guardar_reporte_ciudadano, tipo_problema, barrio_registrado)
-@bot.message_handler(commands=["reportar"])
-def cmd_reportar(message):
-    usuario = db_manager.obtener_usuario(message.chat.id)
-    if usuario is None:
-        bot.send_message(message.chat.id, "Necesitás registrarte primero con /start.")
-        return
-
-    msg = bot.send_message(
-        message.chat.id,
-        "Por favor, describí brevemente el problema (ej: Calle inundada, Árbol caído, Granizo):"
-    )
-    # Pasamos el barrio registrado como argumento extra al siguiente paso
-    bot.register_next_step_handler(msg, procesar_tipo_problema, usuario["barrio"])
-
-def procesar_tipo_problema(message, barrio_registrado):
-    tipo_problema = message.text.strip() if message.text else ""
-    if not tipo_problema:
-        bot.send_message(message.chat.id, "El reporte no puede estar vacío. Intentá nuevamente usando /reportar.")
-        return
-
-    # Preguntamos por el barrio, dando la opción de usar un atajo
-    msg = bot.send_message(
-        message.chat.id,
-        f"¿En qué barrio ocurre esto?\n\n(Escribí el nombre del barrio, o respondé *ok* para usar tu barrio registrado: {barrio_registrado})",
-        parse_mode="Markdown"
-    )
-    bot.register_next_step_handler(msg, guardar_reporte_ciudadano, tipo_problema, barrio_registrado)
 
 def guardar_reporte_ciudadano(message, tipo_problema, barrio_registrado):
     respuesta_barrio = message.text.strip() if message.text else ""
@@ -203,27 +179,13 @@ def guardar_reporte_ciudadano(message, tipo_problema, barrio_registrado):
     
     bot.send_message(
         message.chat.id,
-        f"✅ Reporte recibido: '{tipo_problema}' en {barrio_final}. ¡Gracias por informar!"
+        f"✅ Reporte recibido: '{tipo_problema}' en {barrio_final}. ¡Gracias por informar!\n\n"
+        f"Comandos disponibles:\n"
+        f"📊 /estado - Consulta el nivel hídrico actual en tu barrio.\n"
+        f"🚨 /reportar - Envía un reporte ciudadano sobre un incidente en la vía pública."
     )
     logger.info(f"Reporte ciudadano guardado: chat_id={message.chat.id}, tipo={tipo_problema}, barrio={barrio_final}")
 
-def guardar_reporte_ciudadano(message, tipo_problema, barrio_registrado):
-    respuesta_barrio = message.text.strip() if message.text else ""
-    
-    # Si el usuario escribe "ok", usamos el de la BD. Si escribe otra cosa, usamos su texto.
-    if respuesta_barrio.lower() == "ok" or respuesta_barrio == "":
-        barrio_final = barrio_registrado
-    else:
-        barrio_final = respuesta_barrio
-    
-    # Guardamos en la base de datos usando la función existente
-    db_manager.guardar_reporte(message.chat.id, tipo_problema, barrio_final)
-    
-    bot.send_message(
-        message.chat.id,
-        f"✅ Reporte recibido: '{tipo_problema}' en {barrio_final}. ¡Gracias por informar!"
-    )
-    logger.info(f"Reporte ciudadano guardado: chat_id={message.chat.id}, tipo={tipo_problema}, barrio={barrio_final}")
 
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def fallback_default(message):
