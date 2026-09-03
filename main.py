@@ -4,6 +4,7 @@ import telebot
 from telebot import types
 from dotenv import load_dotenv
 import db_manager
+import llm_client
 
 # Cargar variables de entorno desde el archivo .env
 load_dotenv()
@@ -196,6 +197,21 @@ def cmd_disparar_alerta(message):
 
     bot.send_message(message.chat.id, f"Alerta enviada a {enviados}/{len(chat_ids)} usuarios de {barrio}.")
     logger.info(f"Alerta enviada para el barrio {barrio} a {enviados} usuarios.")
+
+@bot.message_handler(func=lambda message: True, content_types=['text'])
+def manejar_lenguaje_natural(message):
+    bot.send_chat_action(message.chat.id, 'typing')
+    logger.info(f"Mensaje natural recibido de {message.chat.id}: {message.text}")
+    
+    # Enviar texto al LLM (OpenRouter)
+    json_data = llm_client.interpretar_texto(message.text)
+    
+    if json_data.get("intencion") == "desconocida":
+        bot.send_message(message.chat.id, "Disculpá, no entendí tu mensaje. Podés usar /start para registrarte o describirme un reporte de problemas en tu barrio.")
+        return
+        
+    # Procesar el JSON estructurado con la función existente
+    procesar_datos_llm(message.chat.id, json_data)
 
 if __name__ == "__main__":
     db_manager.init_db()
