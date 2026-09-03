@@ -5,22 +5,22 @@
     "mensaje_general": "ALERTA ROJA (SIMULACRO): Tormenta severa inminente detectada.",
     "analisis_barrios": {
         "Cambá Cuá": {
-            "nivel": 0,
-            "alerta": "CIELO DESPEJADO: Condiciones hídricas normales.",
-            "weather_code": 0,
-            "precipitacion_mm": 0.0
+            "nivel": 4,
+            "alerta": "ALERTA ROJA: Tormenta severa o granizo detectado.",
+            "weather_code": 95,
+            "precipitacion_mm": 20.0
         },
         "17 de Agosto": {
-            "nivel": 0,
-            "alerta": "CIELO DESPEJADO: Condiciones hídricas normales.",
-            "weather_code": 0,
-            "precipitacion_mm": 0.0
+            "nivel": 3,
+            "alerta": "ALERTA NARANJA: Lluvia muy fuerte, posible anegamiento.",
+            "weather_code": 65,
+            "precipitacion_mm": 12.0
         },
         "Molina Punta": {
-            "nivel": 0,
-            "alerta": "CIELO DESPEJADO: Condiciones hídricas normales.",
-            "weather_code": 0,
-            "precipitacion_mm": 0.0
+            "nivel": 2,
+            "alerta": "ALERTA AMARILLA: Lluvia moderada continua.",
+            "weather_code": 61,
+            "precipitacion_mm": 5.0
         },
         "Centro": {
             "nivel": 0,

@@ -42,13 +42,37 @@ def procesar_nombre(message):
         bot.register_next_step_handler(msg, procesar_nombre)
         return
         
-    msg = bot.send_message(message.chat.id, "¿En qué barrio vivís?")
+    opciones = (
+        "¿En qué barrio vivís? (Elegí el número)\n"
+        "1. Cambá Cuá\n"
+        "2. 17 de Agosto\n"
+        "3. Molina Punta\n"
+        "4. Centro"
+    )
+    msg = bot.send_message(message.chat.id, opciones)
     bot.register_next_step_handler(msg, procesar_barrio, nombre)
 
 def procesar_barrio(message, nombre):
-    barrio = message.text.strip() if message.text else ""
+    opcion = message.text.strip() if message.text else ""
+    
+    barrios = {
+        "1": "Cambá Cuá",
+        "2": "17 de Agosto",
+        "3": "Molina Punta",
+        "4": "Centro"
+    }
+    
+    barrio = barrios.get(opcion)
+    
     if not barrio:
-        msg = bot.send_message(message.chat.id, "El barrio no puede estar vacío. Por favor, ¿en qué barrio vivís?")
+        msg = bot.send_message(
+            message.chat.id, 
+            "Opción no válida. Por favor, ingresá el número de tu barrio:\n"
+            "1. Cambá Cuá\n"
+            "2. 17 de Agosto\n"
+            "3. Molina Punta\n"
+            "4. Centro"
+        )
         bot.register_next_step_handler(msg, procesar_barrio, nombre)
         return
         
