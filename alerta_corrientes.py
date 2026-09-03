@@ -88,21 +88,6 @@ def demo_alerta_corrientes():
     with open("ultima_alerta.json", "w", encoding="utf-8") as f:
         f.write(salida_json)
 
-    # Integración con el Bot SAPH
-    mapa_niveles = {0: "Despejado", 1: "Verde", 2: "Amarilla", 3: "Naranja", 4: "Roja"}
-    
-    if barrios_en_alerta:
-        payload_bot = {
-            "intencion": "alerta_meteorologica",
-            "entidades": {
-                "barrios_afectados": barrios_en_alerta, 
-                "nivel_alerta": mapa_niveles.get(nivel_maximo_detectado, "Roja"),
-                "mensaje": mensaje_alerta_principal
-            }
-        }
-        print(f"\n🚀 Disparando broadcast a través del bot para el nivel {nivel_maximo_detectado}...")
-        # main.procesar_datos_llm(0, payload_bot)
-
     return datos_json
 
 if __name__ == '__main__':

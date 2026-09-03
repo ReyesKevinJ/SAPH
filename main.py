@@ -4,6 +4,10 @@ import telebot
 from telebot import types
 from dotenv import load_dotenv
 import db_manager
+import time
+import threading
+import json
+import alerta_corrientes
 
 # Cargar variables de entorno desde el archivo .env
 load_dotenv()
@@ -156,7 +160,62 @@ def fallback_default(message):
         "Comando no reconocido. Podés usar /start para registrarte o /reportar para informar un problema en tu barrio."
     )
 
+def chequeo_periodico_clima():
+    """Se ejecuta en segundo plano para buscar alertas y avisar a los vecinos."""
+    ultima_alerta_enviada = None
+    
+    while True:
+        try:
+            logger.info("🔄 Iniciando revisión automática del clima (Open-Meteo)...")
+            
+            # Ejecutamos el script que actualiza el JSON
+            alerta_corrientes.demo_alerta_corrientes()
+            
+            # Leemos el resultado fresco
+            if os.path.exists("ultima_alerta.json"):
+                with open("ultima_alerta.json", "r", encoding="utf-8") as f:
+                    datos = json.load(f)
+                
+                nivel = datos.get("nivel_general", 0)
+                timestamp = datos.get("timestamp")
+                
+                # Si hay alerta (Nivel 2 o más) y es nueva (distinto timestamp)
+                if nivel >= 2 and timestamp != ultima_alerta_enviada:
+                    mensaje = datos.get("mensaje_general", "Alerta meteorológica detectada.")
+                    analisis_barrios = datos.get("analisis_barrios", {})
+                    
+                    # Filtramos solo los barrios que realmente están en peligro
+                    barrios_afectados = [b for b, info in analisis_barrios.items() if info["nivel"] >= 2]
+                    
+                    for barrio in barrios_afectados:
+                        chat_ids = db_manager.obtener_chat_ids_por_barrio(barrio)
+                        for chat_id in chat_ids:
+                            try:
+                                bot.send_message(
+                                    chat_id, 
+                                    f"🚨 ALERTA AUTOMÁTICA - {barrio}\n{mensaje}\nExtremá precauciones y seguí las indicaciones de Defensa Civil."
+                                )
+                            except Exception as e:
+                                logger.error(f"Error enviando alerta a {chat_id}: {e}")
+                    
+                    # Registramos que esta alerta ya se envió para no spamear a la gente
+                    ultima_alerta_enviada = timestamp
+                    logger.info(f"✅ Alertas automáticas enviadas a: {barrios_afectados}")
+                    
+        except Exception as e:
+            logger.error(f"❌ Error en el chequeo periódico: {e}")
+        
+        # Esperar 30 minutos (1800 segundos) antes del próximo escaneo. 
+        # (Para probarlo ahora rápido, cambialo a 30 segundos)
+        time.sleep(1800)
+
 if __name__ == "__main__":
     db_manager.init_db()
     logger.info("Iniciando bot...")
+    
+    # Arrancamos el temporizador en segundo plano
+    hilo_clima = threading.Thread(target=chequeo_periodico_clima, daemon=True)
+    hilo_clima.start()
+    
+    # Arrancamos el bot de Telegram
     bot.infinity_polling()
