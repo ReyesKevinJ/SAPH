@@ -41,6 +41,8 @@ Asegúrate de tener instalado **Python 3.8+** en tu sistema.
 
 ## 🎮 Guía de Uso
 
+Para comenzar a interactuar con el bot en Telegram, búscalo por su usuario: **[@SAPH_Meteorologico_Bot](https://t.me/SAPH_Meteorologico_Bot)** y envíale el comando `/start`.
+
 El sistema consta de múltiples módulos que funcionan en conjunto:
 
 ### 1. Iniciar el Bot de Telegram
