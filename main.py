@@ -242,22 +242,6 @@ def guardar_reporte_ciudadano(message, tipo_problema, barrio_registrado):
         f"✅ Reporte recibido: '{tipo_problema}' en {barrio_final}. ¡Gracias por informar!"
     )
     logger.info(f"Reporte ciudadano guardado: chat_id={message.chat.id}, tipo={tipo_problema}, barrio={barrio_final}")
-    tipo_problema = message.text.strip() if message.text else ""
-    if not tipo_problema:
-        bot.send_message(message.chat.id, "El reporte no puede estar vacío. Intentá nuevamente usando /reportar.")
-        return
-
-    # Usamos la base de datos existente para guardar el reporte
-    usuario = db_manager.obtener_usuario(message.chat.id)
-    barrio = usuario["barrio"]
-    
-    db_manager.guardar_reporte(message.chat.id, tipo_problema, barrio)
-    
-    bot.send_message(
-        message.chat.id,
-        f"✅ Reporte recibido: '{tipo_problema}' en {barrio}. ¡Gracias por informar!"
-    )
-    logger.info(f"Reporte ciudadano guardado: chat_id={message.chat.id}, tipo={tipo_problema}, barrio={barrio}")
 
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def manejar_lenguaje_natural(message):
