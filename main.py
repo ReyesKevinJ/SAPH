@@ -4,7 +4,6 @@ import telebot
 from telebot import types
 from dotenv import load_dotenv
 import db_manager
-import llm_client
 
 # Cargar variables de entorno desde el archivo .env
 load_dotenv()
@@ -22,73 +21,7 @@ ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "123456789").split(",") if x
 
 bot = telebot.TeleBot(TOKEN)
 
-def procesar_datos_llm(chat_id, json_data):
-    """
-    Pista de aterrizaje para datos estructurados provenientes de un LLM.
-    json_data esperado: {"intencion": "registro"|"reporte", "entidades": {...}}
-    """
-    try:
-        intencion = json_data.get("intencion")
-        entidades = json_data.get("entidades", {})
 
-        if intencion == "registro":
-            nombre = entidades["nombre"]
-            barrio = entidades["barrio"]
-            db_manager.guardar_usuario(chat_id, nombre, barrio)
-            bot.send_message(
-                chat_id,
-                f"Registro completo. Nombre: {nombre} | Barrio: {barrio}.",
-            )
-            logger.info(f"Usuario registrado via LLM: chat_id={chat_id}, barrio={barrio}")
-
-        elif intencion == "reporte":
-            usuario = db_manager.obtener_usuario(chat_id)
-            if usuario is None:
-                bot.send_message(chat_id, "Necesitás registrarte primero con /start.")
-                logger.warning(f"Reporte rechazado, usuario no registrado: chat_id={chat_id}")
-                return
-
-            tipo_problema = entidades["tipo_problema"]
-            barrio = entidades.get("barrio", usuario["barrio"])
-            db_manager.guardar_reporte(chat_id, tipo_problema, barrio)
-            bot.send_message(
-                chat_id,
-                f"Reporte recibido: {tipo_problema} en {barrio}. Gracias por informar.",
-            )
-            logger.info(f"Reporte guardado via LLM: chat_id={chat_id}, tipo={tipo_problema}, barrio={barrio}")
-
-        elif intencion == "alerta_meteorologica":
-            barrios_afectados = entidades.get("barrios_afectados", [])
-            nivel_alerta = entidades.get("nivel_alerta", "Naranja")
-            detalle = entidades.get("mensaje", "Anomalías hídricas detectadas por radar.")
-            
-            total_enviados = 0
-            for barrio in barrios_afectados:
-                chat_ids = db_manager.obtener_chat_ids_por_barrio(barrio)
-                if not chat_ids:
-                    continue
-                    
-                texto_alerta = f"🚨 ALERTA METEOROLÓGICA {nivel_alerta.upper()} - {barrio}\n{detalle}\nExtremá precauciones y seguí las indicaciones oficiales."
-                
-                for chat_id in chat_ids:
-                    try:
-                        bot.send_message(chat_id, texto_alerta)
-                        total_enviados += 1
-                    except Exception as e:
-                        logger.error(f"Error enviando alerta SMN al chat {chat_id}: {e}")
-                        
-            logger.info(f"Alerta SMN ({nivel_alerta}) enviada a {total_enviados} usuarios de los barrios: {barrios_afectados}")
-
-        else:
-            bot.send_message(chat_id, "No pude interpretar tu mensaje. Intentá de nuevo.")
-            logger.warning(f"Intención desconocida: chat_id={chat_id}, json_data={json_data}")
-
-    except KeyError as e:
-        bot.send_message(chat_id, "Faltan datos para procesar tu solicitud.")
-        logger.error(f"KeyError procesando LLM data: chat_id={chat_id}, error={e}, json_data={json_data}")
-    except Exception as e:
-        bot.send_message(chat_id, "Ocurrió un error interno. Intentá más tarde.")
-        logger.error(f"Error inesperado: chat_id={chat_id}, error={e}, json_data={json_data}")
 
 @bot.message_handler(commands=["start"])
 def cmd_start(message):
@@ -217,19 +150,11 @@ def guardar_reporte_ciudadano(message, tipo_problema, barrio_registrado):
     logger.info(f"Reporte ciudadano guardado: chat_id={message.chat.id}, tipo={tipo_problema}, barrio={barrio_final}")
 
 @bot.message_handler(func=lambda message: True, content_types=['text'])
-def manejar_lenguaje_natural(message):
-    bot.send_chat_action(message.chat.id, 'typing')
-    logger.info(f"Mensaje natural recibido de {message.chat.id}: {message.text}")
-    
-    # Enviar texto al LLM (OpenRouter)
-    json_data = llm_client.interpretar_texto(message.text)
-    
-    if json_data.get("intencion") == "desconocida":
-        bot.send_message(message.chat.id, "Disculpá, no entendí tu mensaje. Podés usar /start para registrarte o describirme un reporte de problemas en tu barrio.")
-        return
-        
-    # Procesar el JSON estructurado con la función existente
-    procesar_datos_llm(message.chat.id, json_data)
+def fallback_default(message):
+    bot.send_message(
+        message.chat.id, 
+        "Comando no reconocido. Podés usar /start para registrarte o /reportar para informar un problema en tu barrio."
+    )
 
 if __name__ == "__main__":
     db_manager.init_db()
