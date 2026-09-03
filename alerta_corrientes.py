@@ -1,21 +1,37 @@
 import requests
 from io import BytesIO
 from PIL import Image
-import json  
+import json
+import auto_token  
 
 def demo_alerta_corrientes():
-    # 1. Configuración del radar
+# 2. Ejecutamos la renovación ANTES de hacer nada
+    print("🔄 Iniciando ciclo: Actualizando tokens primero...")
+    exito = auto_token.renovar_credenciales()
+    if not exito:
+        print("⚠️ No se pudieron renovar las credenciales. Intentando con las últimas guardadas...")
+
+    # 3. Configuración del radar
     radar_id = "RMA4"
     alcance = "240" 
     
     url_json = f"https://ws1.smn.gob.ar/v1/images/radar/{radar_id}_{alcance}"
     
-    # Tu token (asegurate de que siga siendo válido, o copialo de nuevo si pasaron 2 hs)
-    token_smn = "JWT eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ3ZWIiLCJzY29wZXMiOiJST0xFX1VTRVJfRk9SRUNBU1QsUk9MRV9VU0VSX0dFT1JFRixST0xFX1VTRVJfSElTVE9SWSxST0xFX1VTRVJfSU1BR0VTLFJPTEVfVVNFUl9NQVAsUk9MRV9VU0VSX01FU1NBR0VTLFJPTEVfVVNFUl9SQU5LSU5HLFJPTEVfVVNFUl9TVEFUSVNUSUNTLFJPTEVfVVNFUl9XQVJOSU5HLFJPTEVfVVNFUl9XRUFUSEVSIiwiaWF0IjoxNzg4NDQ1MzI4LCJleHAiOjE3ODg0NDg5Mjh9.7I8n0wNOFfk36HuzO3LfAVKCJi2XlcrPY4RGhvoFDyY"
+    # 4. Cargamos las credenciales recién actualizadas
+    try:
+        with open("credenciales_smn.json", "r", encoding="utf-8") as f:
+            creds = json.load(f)
+            token_smn = creds.get("token")
+            cookie_smn = creds.get("cookie")
+            
+        if not token_smn or not cookie_smn:
+            raise ValueError("Las credenciales están vacías.")
+            
+    except Exception as e:
+        print(f"❌ Error al cargar credenciales: {e}")
+        return
 
-    # Tu cookie de Cloudflare
-    cookie_smn = "has_js=1; cf_clearance=k66uCsnCbT1A7GlU3wmOeL0rG6PXwxai9uTuYznagqw-1788444707-1.2.1.1-a_aaAx9QLSwQXyPQZ6zSwALWOpMzgLYkwpNzKOZkU4kNCtbOEeu7VeAoLsAkrfa22K9g2hIh6gwZFBwj6orblJ8WAuIpXtqSyyKCQIwGqxcSd3B_QPKPiWwvgSy50sz.W9GqWcB1BrMR1uLKJiPp3hag0BhPoM_NRzoQIjPBD9hWxDwI1RiJy4UsHD9a_oXcKBnBLbTkUMVJaPSKlKSw2UwksXVf2xOuqJD5Mnx0EWGHOBv2lXAxyzkjgYtDBxZud.5cQRukxwO23rW7sQJgmOKsJ36f05hfeOBUwxq3KSYLLMVh9KQjMIKnp0BXJVKqUbec8D_XPrKEK32qGHo2zRfwp0AqOjQcsfmH7zEyg6TRciVHUyEmwlp1ulISb83FmmfLX9dM6w.ibBs.MUxh88mjgcBGh1gWG_bie_kYu2Wu1BW1gpk7fMVYqsOZKuuectD3yP1Q04ekieGCyapRMw"
-
+    # 5. Construimos los headers con los datos frescos
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Accept": "application/json",
